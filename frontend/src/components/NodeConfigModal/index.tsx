@@ -132,27 +132,6 @@ export function NodeConfigModal({ node, isOpen, onClose }: NodeConfigModalProps)
     }
   }, [data, node?.id])
 
-  // Keyboard shortcuts: Escape to close, Ctrl+Z to undo, Ctrl+Shift+Z or Ctrl+Y to redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose()
-      }
-      // Undo: Ctrl+Z (or Cmd+Z on Mac)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && isOpen) {
-        e.preventDefault()
-        handleUndo()
-      }
-      // Redo: Ctrl+Shift+Z or Ctrl+Y (or Cmd+Shift+Z / Cmd+Y on Mac)
-      if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y') && isOpen) {
-        e.preventDefault()
-        handleRedo()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose, handleUndo, handleRedo])
-
   const handleSave = useCallback(() => {
     if (node) {
       updateNodeData(node.id, { name, config })
@@ -205,6 +184,27 @@ export function NodeConfigModal({ node, isOpen, onClose }: NodeConfigModalProps)
       setConfig(configHistory[newIndex])
     }
   }, [historyIndex, configHistory])
+
+  // Keyboard shortcuts: Escape to close, Ctrl+Z to undo, Ctrl+Shift+Z or Ctrl+Y to redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose()
+      }
+      // Undo: Ctrl+Z (or Cmd+Z on Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && isOpen) {
+        e.preventDefault()
+        handleUndo()
+      }
+      // Redo: Ctrl+Shift+Z or Ctrl+Y (or Cmd+Shift+Z / Cmd+Y on Mac)
+      if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y') && isOpen) {
+        e.preventDefault()
+        handleRedo()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose, handleUndo, handleRedo])
 
   if (!isOpen || !node || !data) return null
 
