@@ -1,5 +1,6 @@
-import { memo, ReactNode, useState } from 'react'
+import { memo, ReactNode, useState, useCallback } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
+import { useFlowStore } from '../../stores'
 
 /**
  * Node data interface with index signature for compatibility
@@ -31,6 +32,7 @@ interface BaseNodeComponentProps {
   icon?: ReactNode
   color?: string
   children?: ReactNode
+  nodeId?: string  // For opening config modal
 }
 
 /**
@@ -72,9 +74,22 @@ function BaseNodeComponent({
   icon,
   color = 'slate',
   children,
+  nodeId,
 }: BaseNodeComponentProps) {
   const [showInputs, setShowInputs] = useState(false)
   const [showOutputs, setShowOutputs] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const setConfigModalNode = useFlowStore((state) => state.setConfigModalNode)
+  const nodes = useFlowStore((state) => state.nodes)
+
+  const handleEditClick = useCallback(() => {
+    if (nodeId) {
+      const node = nodes.find(n => n.id === nodeId)
+      if (node) {
+        setConfigModalNode(node)
+      }
+    }
+  }, [nodeId, nodes, setConfigModalNode])
 
   const colorClasses: Record<string, { bg: string; border: string; text: string }> = {
     slate: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
@@ -90,12 +105,29 @@ function BaseNodeComponent({
 
   return (
     <div
+      role="group"
+      aria-label={`${data.nodeType} node: ${data.name || data.label}`}
+      aria-selected={selected}
       className={`
-        min-w-[140px] max-w-[180px] rounded-lg border bg-white shadow-sm
+        relative min-w-[140px] max-w-[180px] rounded-lg border bg-white shadow-sm
         ${selected ? 'border-sky-500 ring-2 ring-sky-200' : 'border-slate-200'}
         transition-all duration-150
       `}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Edit Button - appears on hover or selection */}
+      {(isHovered || selected) && nodeId && (
+        <button
+          onClick={handleEditClick}
+          className="absolute -top-2 -right-2 w-6 h-6 bg-sky-500 hover:bg-sky-600 text-white rounded-full shadow-md flex items-center justify-center text-xs z-10 nodrag nopan transition-colors"
+          title="Edit configuration (Enter)"
+          aria-label="Edit node configuration"
+        >
+          ✏️
+        </button>
+      )}
+
       {/* Top Handle */}
       <Handle
         type="target"
@@ -157,12 +189,16 @@ function BaseNodeComponent({
             <button
               onClick={() => setShowInputs(!showInputs)}
               className="text-slate-500 hover:text-slate-700 nodrag"
+              aria-expanded={showInputs}
+              aria-label={`Toggle inputs view, ${Object.keys(data.executionData.inputs || {}).length} inputs`}
             >
               {showInputs ? '▼' : '▶'} {Object.keys(data.executionData.inputs || {}).length} inputs
             </button>
             <button
               onClick={() => setShowOutputs(!showOutputs)}
               className="text-slate-500 hover:text-slate-700 nodrag"
+              aria-expanded={showOutputs}
+              aria-label={`Toggle outputs view, ${Object.keys(data.executionData.outputs || {}).length} outputs`}
             >
               {showOutputs ? '▼' : '▶'} {Object.keys(data.executionData.outputs || {}).length} outputs
             </button>

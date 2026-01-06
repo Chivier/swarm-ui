@@ -3,7 +3,6 @@ import {
   EdgeProps,
   getSmoothStepPath,
   EdgeLabelRenderer,
-  BaseEdge,
 } from '@xyflow/react'
 
 interface EdgeData {

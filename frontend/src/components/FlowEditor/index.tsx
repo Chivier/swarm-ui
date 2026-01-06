@@ -13,6 +13,7 @@ import {
   useReactFlow,
 } from '@xyflow/react'
 import { useFlowStore } from '../../stores'
+import { useKeyboardShortcuts } from '../../hooks'
 import { nodeTypes, getNodeTypeKey } from '../nodes'
 import { EditableEdge } from '../edges'
 import { ContextMenu } from '../ContextMenu'
@@ -77,6 +78,9 @@ export function FlowEditor() {
     setConfigModalNode,
     addNode,
   } = useFlowStore()
+
+  // Initialize keyboard shortcuts
+  useKeyboardShortcuts()
 
   // Close context menu on Escape key
   useEffect(() => {
@@ -278,6 +282,7 @@ function getDefaultConfig(nodeType: string): Record<string, unknown> {
     'ai.openai.compatible': { base_url: '', model: '', temperature: 0.7, api_key: '' },
     'http.request': { method: 'GET', url: '' },
     'code.python': { code: '# Python code here\n\ndef execute(inputs):\n    return {"output": inputs}' },
+    'trigger.schedule': { cron: '0 * * * *', timezone: 'UTC' },
   }
   return configs[nodeType] || {}
 }

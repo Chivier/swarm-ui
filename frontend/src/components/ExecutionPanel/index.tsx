@@ -1,5 +1,6 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useExecutionStore, useFlowStore } from '../../stores'
+import { BaseNodeData } from '../nodes/BaseNode'
 
 /**
  * ExecutionPanel - Right sidebar for execution control and monitoring
@@ -12,7 +13,31 @@ import { useExecutionStore, useFlowStore } from '../../stores'
  */
 export function ExecutionPanel() {
   const { status, nodeExecutions, logs, progress } = useExecutionStore()
-  const { selectedNode, nodes, workflowName } = useFlowStore()
+  const { selectedNode, nodes, workflowName, updateNodeData, setConfigModalNode } = useFlowStore()
+  const [copied, setCopied] = useState(false)
+  const [configExpanded, setConfigExpanded] = useState(false)
+
+  const nodeData = selectedNode?.data as BaseNodeData | undefined
+
+  const handleCopyUuid = useCallback(async () => {
+    if (nodeData?.uuid) {
+      await navigator.clipboard.writeText(nodeData.uuid)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }, [nodeData?.uuid])
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedNode) {
+      updateNodeData(selectedNode.id, { name: e.target.value })
+    }
+  }, [selectedNode, updateNodeData])
+
+  const handleEditConfig = useCallback(() => {
+    if (selectedNode) {
+      setConfigModalNode(selectedNode)
+    }
+  }, [selectedNode, setConfigModalNode])
 
   const handleExecute = useCallback(() => {
     // TODO: Implement workflow execution
@@ -113,23 +138,70 @@ export function ExecutionPanel() {
       </div>
 
       {/* Selected Node Details */}
-      {selectedNode && (
+      {selectedNode && nodeData && (
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-2">
             Selected Node
           </h2>
-          <div className="p-3 bg-white rounded-lg border border-slate-200">
-            <div className="text-sm">
-              <div className="font-medium text-slate-800">
-                {String(selectedNode.data?.label || selectedNode.id)}
-              </div>
-              <div className="text-xs text-slate-500 mt-1">
-                Type: {String(selectedNode.data?.nodeType || selectedNode.type)}
-              </div>
-              <div className="text-xs text-slate-500">
-                ID: {selectedNode.id}
+          <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-3">
+            {/* Name (editable) */}
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Name</label>
+              <input
+                type="text"
+                value={nodeData.name || nodeData.label || ''}
+                onChange={handleNameChange}
+                className="w-full text-sm font-medium border border-slate-200 rounded px-2 py-1 focus:border-sky-500 focus:ring-1 focus:ring-sky-200 focus:outline-none"
+              />
+            </div>
+
+            {/* UUID (read-only with copy) */}
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">UUID</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 text-xs font-mono text-slate-600 bg-slate-50 px-2 py-1 rounded select-all truncate">
+                  {nodeData.uuid || 'N/A'}
+                </div>
+                <button
+                  onClick={handleCopyUuid}
+                  className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded transition-colors"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
               </div>
             </div>
+
+            {/* Type */}
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Type</label>
+              <div className="text-sm text-slate-700">{nodeData.nodeType}</div>
+            </div>
+
+            {/* Configuration (collapsible) */}
+            {nodeData.config && Object.keys(nodeData.config).length > 0 && (
+              <div>
+                <button
+                  onClick={() => setConfigExpanded(!configExpanded)}
+                  className="flex items-center justify-between w-full text-xs text-slate-500 hover:text-slate-700"
+                >
+                  <span>Configuration</span>
+                  <span>{configExpanded ? '▼' : '▶'}</span>
+                </button>
+                {configExpanded && (
+                  <pre className="text-xs bg-slate-50 p-2 rounded overflow-auto max-h-32 mt-1 whitespace-pre-wrap">
+                    {JSON.stringify(nodeData.config, null, 2)}
+                  </pre>
+                )}
+              </div>
+            )}
+
+            {/* Edit Configuration Button */}
+            <button
+              onClick={handleEditConfig}
+              className="w-full mt-2 px-4 py-2 bg-sky-500 text-white text-sm font-medium rounded-lg hover:bg-sky-600 transition-colors"
+            >
+              Edit Configuration
+            </button>
           </div>
         </div>
       )}

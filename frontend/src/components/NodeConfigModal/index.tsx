@@ -12,16 +12,21 @@ interface NodeConfigModalProps {
 }
 
 /**
- * Get config field schema based on node type
+ * Config field schema type
  */
-function getConfigSchema(nodeType: string): Array<{
+type ConfigField = {
   name: string
   type: 'text' | 'number' | 'select' | 'textarea' | 'boolean'
   label: string
   options?: string[]
   placeholder?: string
-}> {
-  const schemas: Record<string, typeof schemas[string]> = {
+}
+
+/**
+ * Get config field schema based on node type
+ */
+function getConfigSchema(nodeType: string): ConfigField[] {
+  const schemas: Record<string, ConfigField[]> = {
     'ai.openai.chat': [
       { name: 'model', type: 'select', label: 'Model', options: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
       { name: 'temperature', type: 'number', label: 'Temperature', placeholder: '0.7' },
@@ -105,26 +110,38 @@ export function NodeConfigModal({ node, isOpen, onClose }: NodeConfigModalProps)
   const configSchema = getConfigSchema(data.nodeType)
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-[600px] max-h-[80vh] flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        className="bg-white rounded-lg shadow-xl w-[600px] max-h-[80vh] flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 id="modal-title" className="text-lg font-semibold text-slate-900">
             {data.label} Settings
           </h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 text-xl leading-none p-1"
+            aria-label="Close modal (Escape)"
           >
             &times;
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-slate-200 flex">
+        <div className="border-b border-slate-200 flex" role="tablist" aria-label="Node configuration tabs">
           {(['settings', 'input', 'output'] as TabType[]).map((tab) => (
             <button
               key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`tabpanel-${tab}`}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === tab

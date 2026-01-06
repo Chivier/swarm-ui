@@ -34,6 +34,8 @@ export function ContextMenu({ x, y, type, targetId, onClose }: ContextMenuProps)
 
   return (
     <div
+      role="menu"
+      aria-label={`Context menu for ${type}`}
       style={{
         position: 'fixed',
         left: adjustedX,
@@ -43,14 +45,17 @@ export function ContextMenu({ x, y, type, targetId, onClose }: ContextMenuProps)
       className="min-w-[120px] bg-white border border-slate-200 rounded-lg shadow-md py-1"
     >
       <button
+        role="menuitem"
         onClick={handleDelete}
         className="w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 hover:bg-red-50 hover:text-red-600 transition-colors"
+        aria-label={`Delete ${type} (Del)`}
       >
         <svg
           className="w-4 h-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"

@@ -28,7 +28,7 @@ function getNodeData(props: NodeProps): BaseNodeData {
 const OpenAINodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="🤖" color="violet">
+    <BaseNode data={data} selected={props.selected} icon="🤖" color="violet" nodeId={props.id}>
       <div className="space-y-1">
         <div className="flex items-center gap-1">
           <span className="text-xs text-slate-500">Model:</span>
@@ -48,7 +48,7 @@ export const OpenAINode = memo(OpenAINodeComponent)
 const OpenAICompatibleNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="🔌" color="violet">
+    <BaseNode data={data} selected={props.selected} icon="🔌" color="violet" nodeId={props.id}>
       <div className="space-y-1">
         <div className="flex items-center gap-1">
           <span className="text-xs text-slate-500">Endpoint:</span>
@@ -91,7 +91,7 @@ const PythonNodeComponent = (props: NodeProps) => {
   )
 
   return (
-    <BaseNode data={data} selected={props.selected} icon="🐍" color="emerald">
+    <BaseNode data={data} selected={props.selected} icon="🐍" color="emerald" nodeId={props.id}>
       <div className="space-y-2 min-w-[200px]">
         <div className="text-xs text-slate-500">
           {lineCount} lines
@@ -117,7 +117,7 @@ export const PythonNode = memo(PythonNodeComponent)
 const CodeNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="💻" color="emerald">
+    <BaseNode data={data} selected={props.selected} icon="💻" color="emerald" nodeId={props.id}>
       <div className="text-xs text-slate-500">
         Script execution
       </div>
@@ -132,7 +132,7 @@ export const CodeNode = memo(CodeNodeComponent)
 const FlowNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="🔀" color="amber">
+    <BaseNode data={data} selected={props.selected} icon="🔀" color="amber" nodeId={props.id}>
       <div className="text-xs text-slate-500">
         Control flow
       </div>
@@ -147,7 +147,7 @@ export const FlowNode = memo(FlowNodeComponent)
 const HTTPNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="🌐" color="cyan">
+    <BaseNode data={data} selected={props.selected} icon="🌐" color="cyan" nodeId={props.id}>
       <div className="space-y-1">
         <div className="flex items-center gap-1">
           <span className="text-xs font-mono px-1 bg-cyan-100 text-cyan-700 rounded">
@@ -166,7 +166,7 @@ export const HTTPNode = memo(HTTPNodeComponent)
 const TriggerNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="⚡" color="rose">
+    <BaseNode data={data} selected={props.selected} icon="⚡" color="rose" nodeId={props.id}>
       <div className="text-xs text-slate-500">
         Workflow trigger
       </div>
@@ -176,12 +176,35 @@ const TriggerNodeComponent = (props: NodeProps) => {
 export const TriggerNode = memo(TriggerNodeComponent)
 
 /**
+ * Schedule Trigger Node - Cron-based scheduled trigger
+ */
+const ScheduleTriggerNodeComponent = (props: NodeProps) => {
+  const data = getNodeData(props)
+  const cronExpression = (data.config?.cron as string) || '0 * * * *'
+  const scheduleDescription = parseCronToHuman(cronExpression)
+
+  return (
+    <BaseNode data={data} selected={props.selected} icon="🕐" color="rose" nodeId={props.id}>
+      <div className="space-y-1">
+        <div className="text-xs font-mono bg-slate-100 px-1 rounded">
+          {cronExpression}
+        </div>
+        <div className="text-xs text-slate-500">
+          {scheduleDescription}
+        </div>
+      </div>
+    </BaseNode>
+  )
+}
+export const ScheduleTriggerNode = memo(ScheduleTriggerNodeComponent)
+
+/**
  * Core Node - For Input/Output nodes
  */
 const CoreNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="⚙️" color="slate">
+    <BaseNode data={data} selected={props.selected} icon="⚙️" color="slate" nodeId={props.id}>
       <div className="text-xs text-slate-500">
         {data.nodeType === 'core.input' ? 'Workflow input' : 'Workflow output'}
       </div>
@@ -196,7 +219,7 @@ export const CoreNode = memo(CoreNodeComponent)
 const FileNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="📁" color="sky">
+    <BaseNode data={data} selected={props.selected} icon="📁" color="sky" nodeId={props.id}>
       <div className="text-xs text-slate-500">
         File operation
       </div>
@@ -211,7 +234,7 @@ export const FileNode = memo(FileNodeComponent)
 const DefaultNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
   return (
-    <BaseNode data={data} selected={props.selected} icon="📦" color="slate">
+    <BaseNode data={data} selected={props.selected} icon="📦" color="slate" nodeId={props.id}>
       <div className="text-xs text-slate-400">
         Unknown node type
       </div>
@@ -246,7 +269,7 @@ export const nodeTypes = {
   // Trigger nodes
   'trigger.manual': TriggerNode,
   'trigger.webhook': TriggerNode,
-  'trigger.schedule': TriggerNode,
+  'trigger.schedule': ScheduleTriggerNode,
 
   // Core nodes
   'core.input': CoreNode,
