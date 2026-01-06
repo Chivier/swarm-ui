@@ -63,6 +63,7 @@ const NODE_CATEGORIES: NodeCategory[] = [
     nodes: [
       { type: 'trigger.manual', label: 'Manual', description: 'Manual trigger' },
       { type: 'trigger.webhook', label: 'Webhook', description: 'HTTP trigger' },
+      { type: 'trigger.schedule', label: 'Schedule', description: 'Cron-based trigger' },
     ],
   },
   {

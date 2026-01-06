@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react'
 import { NodeProps } from '@xyflow/react'
 import { BaseNode, BaseNodeData } from './BaseNode'
 import { useFlowStore } from '../../stores'
+import { parseCronToHuman } from '../../utils/cron'
 
 /**
  * Helper to safely cast node data
@@ -11,6 +12,9 @@ function getNodeData(props: NodeProps): BaseNodeData {
   return {
     label: data.label || 'Unknown',
     nodeType: data.nodeType || 'unknown',
+    uuid: data.uuid || '',
+    name: data.name || data.label || 'Unknown',
+    version: data.version || '1',
     description: data.description,
     config: data.config,
     inputs: data.inputs,

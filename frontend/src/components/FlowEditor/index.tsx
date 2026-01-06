@@ -1,4 +1,5 @@
-import { useCallback, useRef, DragEvent } from 'react'
+import { useCallback, useRef, useState, useEffect, DragEvent } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import {
   ReactFlow,
   Background,
@@ -8,10 +9,25 @@ import {
   ConnectionLineType,
   MarkerType,
   Node,
+  Edge,
   useReactFlow,
 } from '@xyflow/react'
 import { useFlowStore } from '../../stores'
 import { nodeTypes, getNodeTypeKey } from '../nodes'
+import { EditableEdge } from '../edges'
+import { ContextMenu } from '../ContextMenu'
+
+// Custom edge types
+const edgeTypes = {
+  editable: EditableEdge,
+}
+
+interface ContextMenuState {
+  x: number
+  y: number
+  type: 'node' | 'edge'
+  targetId: string
+}
 
 /**
  * Node label mapping for display
@@ -49,6 +65,7 @@ const NODE_LABELS: Record<string, string> = {
 export function FlowEditor() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const { screenToFlowPosition } = useReactFlow()
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
 
   const {
     nodes,
@@ -57,8 +74,25 @@ export function FlowEditor() {
     onEdgesChange,
     onConnect,
     setSelectedNode,
+    setConfigModalNode,
     addNode,
   } = useFlowStore()
+
+  // Close context menu on Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && contextMenu) {
+        setContextMenu(null)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [contextMenu])
+
+  // Close context menu callback
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null)
+  }, [])
 
   // Handle node selection
   const handleNodeClick = useCallback(
@@ -68,10 +102,47 @@ export function FlowEditor() {
     [setSelectedNode]
   )
 
-  // Handle pane click (deselect)
+  // Handle pane click (deselect and close context menu)
   const handlePaneClick = useCallback(() => {
     setSelectedNode(null)
+    setContextMenu(null)
   }, [setSelectedNode])
+
+  // Handle right-click on node
+  const handleNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault()
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        type: 'node',
+        targetId: node.id,
+      })
+    },
+    []
+  )
+
+  // Handle right-click on edge
+  const handleEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault()
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        type: 'edge',
+        targetId: edge.id,
+      })
+    },
+    []
+  )
+
+  // Handle double-click on node to open config modal
+  const handleNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setConfigModalNode(node)
+    },
+    [setConfigModalNode]
+  )
 
   // Handle drop from node palette
   const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -95,14 +166,20 @@ export function FlowEditor() {
       // Get the appropriate custom node type
       const customNodeType = getNodeTypeKey(nodeType)
 
+      // Get display label for the node
+      const displayLabel = NODE_LABELS[nodeType] || nodeType.split('.').pop() || nodeType
+
       // Create new node with custom type
       const newNode: Node = {
         id: `${nodeType}-${Date.now()}`,
         type: customNodeType,
         position,
         data: {
-          label: NODE_LABELS[nodeType] || nodeType.split('.').pop() || nodeType,
+          label: displayLabel,
           nodeType,
+          uuid: uuidv4(),
+          name: `${displayLabel}-v1`,
+          version: '1',
           description: getNodeDescription(nodeType),
           config: getDefaultConfig(nodeType),
         },
@@ -128,13 +205,16 @@ export function FlowEditor() {
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
+        onNodeContextMenu={handleNodeContextMenu}
+        onEdgeContextMenu={handleEdgeContextMenu}
+        onNodeDoubleClick={handleNodeDoubleClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         snapToGrid
         snapGrid={[15, 15]}
         defaultEdgeOptions={{
-          type: 'smoothstep',
-          animated: true,
+          type: 'editable',
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 20,
@@ -154,6 +234,15 @@ export function FlowEditor() {
           className="bg-slate-100"
         />
       </ReactFlow>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          type={contextMenu.type}
+          targetId={contextMenu.targetId}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

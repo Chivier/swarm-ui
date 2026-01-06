@@ -1,4 +1,4 @@
-import { memo, ReactNode } from 'react'
+import { memo, ReactNode, useState } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 
 /**
@@ -8,10 +8,18 @@ export interface BaseNodeData {
   [key: string]: unknown
   label: string
   nodeType: string
+  uuid: string          // Non-editable unique identifier
+  name: string          // Editable node name, displayed on node
+  version: string       // Node version (e.g., '1', '1.0')
   description?: string
   config?: Record<string, unknown>
-  inputs?: Array<{ name: string; dtype: string }>
-  outputs?: Array<{ name: string; dtype: string }>
+  inputs?: Array<{ name: string; dtype: string; value?: unknown }>
+  outputs?: Array<{ name: string; dtype: string; value?: unknown }>
+  executionData?: {
+    inputs?: Record<string, unknown>
+    outputs?: Record<string, unknown>
+    timestamp?: Date
+  }
 }
 
 /**
@@ -29,7 +37,7 @@ interface BaseNodeComponentProps {
  * Handle style variants for different positions
  */
 const handleBaseClass = `
-  !w-3 !h-3 !bg-white !border-2 !border-slate-300
+  !w-2 !h-2 !bg-white !border-2 !border-slate-300
   hover:!border-sky-500 hover:!bg-sky-50
   transition-colors duration-150
 `
@@ -43,6 +51,21 @@ const handleBaseClass = `
  * - Icon and label display
  * - Selection state styling
  */
+/**
+ * Format JSON for display with truncation
+ */
+function formatJsonPreview(data: unknown, maxLength = 100): string {
+  try {
+    const json = JSON.stringify(data, null, 2)
+    if (json.length > maxLength) {
+      return json.substring(0, maxLength) + '...'
+    }
+    return json
+  } catch {
+    return String(data)
+  }
+}
+
 function BaseNodeComponent({
   data,
   selected,
@@ -50,6 +73,9 @@ function BaseNodeComponent({
   color = 'slate',
   children,
 }: BaseNodeComponentProps) {
+  const [showInputs, setShowInputs] = useState(false)
+  const [showOutputs, setShowOutputs] = useState(false)
+
   const colorClasses: Record<string, { bg: string; border: string; text: string }> = {
     slate: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
     sky: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-600' },
@@ -65,7 +91,7 @@ function BaseNodeComponent({
   return (
     <div
       className={`
-        min-w-[180px] rounded-lg border-2 bg-white shadow-md
+        min-w-[140px] max-w-[180px] rounded-lg border bg-white shadow-sm
         ${selected ? 'border-sky-500 ring-2 ring-sky-200' : 'border-slate-200'}
         transition-all duration-150
       `}
@@ -103,24 +129,60 @@ function BaseNodeComponent({
       />
 
       {/* Header */}
-      <div className={`px-3 py-2 rounded-t-lg ${colors.bg} border-b ${colors.border}`}>
-        <div className="flex items-center gap-2">
-          {icon && <span className={`text-lg ${colors.text}`}>{icon}</span>}
-          <span className="font-medium text-sm text-slate-800">{data.label}</span>
+      <div className={`px-2 py-1.5 rounded-t-lg ${colors.bg} border-b ${colors.border}`}>
+        <div className="flex items-center gap-1.5">
+          {icon && <span className={`text-sm ${colors.text}`}>{icon}</span>}
+          <span className="font-medium text-xs text-slate-800 truncate">
+            {data.name || data.label}
+          </span>
         </div>
         {data.description && (
-          <div className="text-xs text-slate-500 mt-0.5">{data.description}</div>
+          <div className="text-xs text-slate-500 mt-0.5 truncate">{data.description}</div>
         )}
       </div>
 
       {/* Body */}
-      <div className="px-3 py-2">
+      <div className="px-2 py-1.5">
         {children || (
           <div className="text-xs text-slate-400">
             {data.nodeType}
           </div>
         )}
       </div>
+
+      {/* Execution Data Preview */}
+      {data.executionData && (
+        <div className="border-t border-slate-200">
+          <div className="px-2 py-1 flex justify-between text-xs">
+            <button
+              onClick={() => setShowInputs(!showInputs)}
+              className="text-slate-500 hover:text-slate-700 nodrag"
+            >
+              {showInputs ? '▼' : '▶'} {Object.keys(data.executionData.inputs || {}).length} inputs
+            </button>
+            <button
+              onClick={() => setShowOutputs(!showOutputs)}
+              className="text-slate-500 hover:text-slate-700 nodrag"
+            >
+              {showOutputs ? '▼' : '▶'} {Object.keys(data.executionData.outputs || {}).length} outputs
+            </button>
+          </div>
+          {showInputs && data.executionData.inputs && (
+            <div className="px-2 py-1 bg-slate-50 text-xs font-mono max-h-24 overflow-auto border-t border-slate-100 nodrag">
+              <pre className="whitespace-pre-wrap break-all">
+                {formatJsonPreview(data.executionData.inputs, 200)}
+              </pre>
+            </div>
+          )}
+          {showOutputs && data.executionData.outputs && (
+            <div className="px-2 py-1 bg-emerald-50 text-xs font-mono max-h-24 overflow-auto border-t border-slate-100 nodrag">
+              <pre className="whitespace-pre-wrap break-all">
+                {formatJsonPreview(data.executionData.outputs, 200)}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

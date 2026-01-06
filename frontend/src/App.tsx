@@ -2,8 +2,24 @@ import { ReactFlowProvider } from '@xyflow/react'
 import { FlowEditor } from './components/FlowEditor'
 import { NodePalette } from './components/NodePalette'
 import { ExecutionPanel } from './components/ExecutionPanel'
+import { NodeConfigModal } from './components/NodeConfigModal'
 import { useWorkflow, useAutoSave } from './hooks'
 import { useFlowStore } from './stores'
+
+/**
+ * Node configuration modal wrapper
+ */
+function NodeConfigModalWrapper() {
+  const { configModalNode, setConfigModalNode } = useFlowStore()
+
+  return (
+    <NodeConfigModal
+      node={configModalNode}
+      isOpen={!!configModalNode}
+      onClose={() => setConfigModalNode(null)}
+    />
+  )
+}
 
 /**
  * Recovery dialog for auto-saved workflow
@@ -154,8 +170,9 @@ function App() {
   return (
     <ReactFlowProvider>
       <div className="h-screen w-screen flex flex-col">
-        {/* Recovery dialog */}
+        {/* Modals */}
         <RecoveryDialog />
+        <NodeConfigModalWrapper />
 
         {/* Header with toolbar */}
         <HeaderToolbar />

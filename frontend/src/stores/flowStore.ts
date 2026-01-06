@@ -20,6 +20,7 @@ export interface FlowState {
   nodes: Node[]
   edges: Edge[]
   selectedNode: Node | null
+  configModalNode: Node | null  // Node being edited in config modal
   workflowId: string | null
   workflowName: string
   isDirty: boolean
@@ -32,8 +33,11 @@ export interface FlowState {
   // Actions
   addNode: (node: Node) => void
   removeNode: (nodeId: string) => void
+  removeEdge: (edgeId: string) => void
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void
+  updateEdgeData: (edgeId: string, data: Record<string, unknown>) => void
   setSelectedNode: (node: Node | null) => void
+  setConfigModalNode: (node: Node | null) => void  // Open/close config modal
   loadWorkflow: (id: string, name: string, nodes: Node[], edges: Edge[]) => void
   clearWorkflow: () => void
   setWorkflowName: (name: string) => void
@@ -44,6 +48,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   nodes: [],
   edges: [],
   selectedNode: null,
+  configModalNode: null,
   workflowId: null,
   workflowName: 'Untitled Workflow',
   isDirty: false,
@@ -68,8 +73,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       edges: addEdge(
         {
           ...connection,
-          type: 'smoothstep',
-          animated: true,
+          type: 'editable',
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 20,
@@ -103,6 +107,13 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     })
   },
 
+  removeEdge: (edgeId) => {
+    set({
+      edges: get().edges.filter((e) => e.id !== edgeId),
+      isDirty: true,
+    })
+  },
+
   updateNodeData: (nodeId, data) => {
     set({
       nodes: get().nodes.map((n) =>
@@ -112,8 +123,21 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     })
   },
 
+  updateEdgeData: (edgeId, data) => {
+    set({
+      edges: get().edges.map((e) =>
+        e.id === edgeId ? { ...e, data: { ...e.data, ...data } } : e
+      ),
+      isDirty: true,
+    })
+  },
+
   setSelectedNode: (node) => {
     set({ selectedNode: node })
+  },
+
+  setConfigModalNode: (node) => {
+    set({ configModalNode: node })
   },
 
   // Workflow management
