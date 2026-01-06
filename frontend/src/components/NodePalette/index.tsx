@@ -30,9 +30,8 @@ const NODE_CATEGORIES: NodeCategory[] = [
     name: 'AI',
     icon: '🤖',
     nodes: [
-      { type: 'ai.openai.chat', label: 'OpenAI', description: 'GPT models' },
-      { type: 'ai.anthropic.chat', label: 'Claude', description: 'Anthropic Claude' },
-      { type: 'ai.deepseek.chat', label: 'DeepSeek', description: 'DeepSeek models' },
+      { type: 'ai.openai.chat', label: 'OpenAI', description: 'GPT models (gpt-4, gpt-3.5-turbo)' },
+      { type: 'ai.openai.compatible', label: 'OpenAI Compatible', description: 'Custom API endpoint' },
     ],
   },
   {

@@ -1,7 +1,15 @@
-import { useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Node, Edge } from '@xyflow/react'
 import { useFlowStore, useExecutionStore } from '../stores'
 import { useApi } from './useApi'
+import {
+  WorkflowFile,
+  serializeWorkflow,
+  deserializeWorkflow,
+  downloadWorkflowFile,
+  readWorkflowFile,
+  validateWorkflow,
+} from '../utils/workflowFile'
 
 /**
  * Workflow definition from API
@@ -42,12 +50,15 @@ interface ExecutionResponse {
  * Hook for workflow operations
  *
  * Provides functions for loading, saving, and executing workflows
+ * Supports both API and local file operations
  */
 export function useWorkflow() {
   const flowStore = useFlowStore()
   const executionStore = useExecutionStore()
   const api = useApi<WorkflowDefinition>()
   const execApi = useApi<ExecutionResponse>()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
 
   /**
    * Load a workflow from the API
@@ -128,6 +139,80 @@ export function useWorkflow() {
   }, [api, flowStore])
 
   /**
+   * Save workflow to local JSON file
+   */
+  const saveToFile = useCallback(() => {
+    const { nodes, edges, workflowId, workflowName } = flowStore
+    setFileError(null)
+
+    try {
+      const workflow = serializeWorkflow(nodes, edges, {
+        id: workflowId || undefined,
+        name: workflowName,
+      })
+      downloadWorkflowFile(workflow)
+    } catch (error) {
+      setFileError(`Failed to save file: ${error}`)
+    }
+  }, [flowStore])
+
+  /**
+   * Load workflow from local JSON file
+   */
+  const loadFromFile = useCallback(() => {
+    setFileError(null)
+
+    // Create hidden file input if not exists
+    if (!fileInputRef.current) {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.json'
+      input.style.display = 'none'
+      document.body.appendChild(input)
+      fileInputRef.current = input
+    }
+
+    // Handle file selection
+    fileInputRef.current.onchange = async (event) => {
+      const target = event.target as HTMLInputElement
+      const file = target.files?.[0]
+
+      if (!file) return
+
+      try {
+        const workflow = await readWorkflowFile(file)
+
+        // Validate workflow
+        const errors = validateWorkflow(workflow)
+        if (errors.length > 0) {
+          setFileError(`Validation errors: ${errors.join(', ')}`)
+          return
+        }
+
+        // Deserialize and load
+        const { nodes, edges } = deserializeWorkflow(workflow)
+        flowStore.loadWorkflow(
+          workflow.id,
+          workflow.name,
+          nodes,
+          edges
+        )
+
+        // Reset execution state
+        executionStore.reset()
+      } catch (error) {
+        setFileError(`Failed to load file: ${error}`)
+      }
+
+      // Clear input for re-selection of same file
+      target.value = ''
+    }
+
+    // Trigger file selection dialog
+    fileInputRef.current.click()
+  }, [flowStore, executionStore])
+
+  /**
    * Execute the current workflow
    */
   const executeWorkflow = useCallback(async () => {
@@ -162,14 +247,57 @@ export function useWorkflow() {
   const newWorkflow = useCallback(() => {
     flowStore.clearWorkflow()
     executionStore.reset()
+    setFileError(null)
   }, [flowStore, executionStore])
 
+  /**
+   * Export current workflow as JSON object
+   */
+  const exportWorkflow = useCallback((): WorkflowFile => {
+    const { nodes, edges, workflowId, workflowName } = flowStore
+    return serializeWorkflow(nodes, edges, {
+      id: workflowId || undefined,
+      name: workflowName,
+    })
+  }, [flowStore])
+
+  /**
+   * Import workflow from JSON object
+   */
+  const importWorkflow = useCallback(
+    (workflow: WorkflowFile) => {
+      setFileError(null)
+
+      const errors = validateWorkflow(workflow)
+      if (errors.length > 0) {
+        setFileError(`Validation errors: ${errors.join(', ')}`)
+        return false
+      }
+
+      const { nodes, edges } = deserializeWorkflow(workflow)
+      flowStore.loadWorkflow(workflow.id, workflow.name, nodes, edges)
+      executionStore.reset()
+      return true
+    },
+    [flowStore, executionStore]
+  )
+
   return {
+    // API operations
     loadWorkflow,
     saveWorkflow,
     executeWorkflow,
     newWorkflow,
+
+    // File operations
+    saveToFile,
+    loadFromFile,
+    exportWorkflow,
+    importWorkflow,
+
+    // State
     loading: api.loading || execApi.loading,
     error: api.error || execApi.error,
+    fileError,
   }
 }

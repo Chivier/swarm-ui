@@ -55,23 +55,102 @@ body {
 }
 
 .react-flow__node.selected {
-  @apply ring-2 ring-primary-500;
+  @apply ring-2 ring-sky-500;
 }
 
 .react-flow__edge-path {
   @apply stroke-slate-400;
+  stroke-width: 2;
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
-  @apply stroke-primary-500;
+  @apply stroke-sky-500;
+}
+
+.react-flow__connection-line {
+  stroke: #94a3b8;
+  stroke-width: 2;
+}
+
+/* Handle styles - 4 directional connection points */
+.react-flow__handle {
+  @apply w-3 h-3 bg-white border-2 border-slate-300 rounded-full;
+  @apply transition-all duration-150;
+}
+
+.react-flow__handle:hover {
+  @apply border-sky-500 bg-sky-50 scale-125;
+}
+
+.react-flow__handle.connecting {
+  @apply border-sky-500 bg-sky-100;
+}
+
+.react-flow__handle.valid {
+  @apply border-emerald-500 bg-emerald-100;
+}
+
+.react-flow__handle.invalid {
+  @apply border-rose-500 bg-rose-100;
+}
+
+/* Handle positions */
+.react-flow__handle-top {
+  top: -6px;
+}
+
+.react-flow__handle-right {
+  right: -6px;
+}
+
+.react-flow__handle-bottom {
+  bottom: -6px;
+}
+
+.react-flow__handle-left {
+  left: -6px;
+}
+
+/* Target handles (inputs) - square style */
+.react-flow__handle-top,
+.react-flow__handle-left {
+  @apply rounded-sm;
+}
+
+/* Source handles (outputs) - circle style */
+.react-flow__handle-right,
+.react-flow__handle-bottom {
+  @apply rounded-full;
 }
 
 /* Node palette item */
 .node-palette-item {
   @apply p-3 bg-white rounded-lg border border-slate-200 cursor-grab;
-  @apply hover:border-primary-400 hover:shadow-sm transition-all;
+  @apply hover:border-sky-400 hover:shadow-sm transition-all;
 }
 
 .node-palette-item:active {
   @apply cursor-grabbing;
+}
+
+/* Mini map */
+.react-flow__minimap {
+  @apply rounded-lg border border-slate-200;
+}
+
+/* Controls */
+.react-flow__controls {
+  @apply rounded-lg border border-slate-200 shadow-sm;
+}
+
+.react-flow__controls-button {
+  @apply border-b border-slate-200;
+}
+
+.react-flow__controls-button:last-child {
+  @apply border-b-0;
+}
+
+.react-flow__controls-button:hover {
+  @apply bg-slate-100;
 }
