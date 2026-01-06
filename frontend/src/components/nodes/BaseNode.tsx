@@ -1,5 +1,5 @@
 import { memo, ReactNode, useState, useCallback } from 'react'
-import { Handle, Position, NodeProps } from '@xyflow/react'
+import { Handle, Position, NodeProps, NodeResizer } from '@xyflow/react'
 import { useFlowStore } from '../../stores'
 
 /**
@@ -109,13 +109,21 @@ function BaseNodeComponent({
       aria-label={`${data.nodeType} node: ${data.name || data.label}`}
       aria-selected={selected}
       className={`
-        relative min-w-[140px] max-w-[180px] rounded-lg border bg-white shadow-sm
+        relative min-w-[140px] rounded-lg border bg-white shadow-sm
         ${selected ? 'border-sky-500 ring-2 ring-sky-200' : 'border-slate-200'}
         transition-all duration-150
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Node Resizer - only visible when selected */}
+      <NodeResizer
+        color="#0ea5e9"
+        isVisible={selected}
+        minWidth={140}
+        minHeight={80}
+        handleStyle={{ width: 8, height: 8 }}
+      />
       {/* Edit Button - appears on hover or selection */}
       {(isHovered || selected) && nodeId && (
         <button

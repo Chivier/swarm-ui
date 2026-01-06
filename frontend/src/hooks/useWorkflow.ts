@@ -142,13 +142,14 @@ export function useWorkflow() {
    * Save workflow to local JSON file
    */
   const saveToFile = useCallback(() => {
-    const { nodes, edges, workflowId, workflowName } = flowStore
+    const { nodes, edges, workflowId, workflowName, envVariables } = flowStore
     setFileError(null)
 
     try {
       const workflow = serializeWorkflow(nodes, edges, {
         id: workflowId || undefined,
         name: workflowName,
+        envVariables,
       })
       downloadWorkflowFile(workflow)
     } catch (error) {
@@ -189,13 +190,14 @@ export function useWorkflow() {
           return
         }
 
-        // Deserialize and load
-        const { nodes, edges } = deserializeWorkflow(workflow)
+        // Deserialize and load (including env variables)
+        const { nodes, edges, envVariables } = deserializeWorkflow(workflow)
         flowStore.loadWorkflow(
           workflow.id,
           workflow.name,
           nodes,
-          edges
+          edges,
+          envVariables
         )
 
         // Reset execution state
@@ -254,10 +256,11 @@ export function useWorkflow() {
    * Export current workflow as JSON object
    */
   const exportWorkflow = useCallback((): WorkflowFile => {
-    const { nodes, edges, workflowId, workflowName } = flowStore
+    const { nodes, edges, workflowId, workflowName, envVariables } = flowStore
     return serializeWorkflow(nodes, edges, {
       id: workflowId || undefined,
       name: workflowName,
+      envVariables,
     })
   }, [flowStore])
 
@@ -274,8 +277,8 @@ export function useWorkflow() {
         return false
       }
 
-      const { nodes, edges } = deserializeWorkflow(workflow)
-      flowStore.loadWorkflow(workflow.id, workflow.name, nodes, edges)
+      const { nodes, edges, envVariables } = deserializeWorkflow(workflow)
+      flowStore.loadWorkflow(workflow.id, workflow.name, nodes, edges, envVariables)
       executionStore.reset()
       return true
     },

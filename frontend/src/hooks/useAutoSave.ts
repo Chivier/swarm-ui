@@ -38,7 +38,7 @@ export function useAutoSave() {
 
   // Auto-save function
   const autoSave = useCallback(() => {
-    const { nodes, edges, workflowId, workflowName, isDirty } = flowStore
+    const { nodes, edges, workflowId, workflowName, envVariables, isDirty } = flowStore
 
     // Only save if there are nodes and workflow is dirty
     if (nodes.length === 0 || !isDirty) {
@@ -48,6 +48,7 @@ export function useAutoSave() {
     const workflow = serializeWorkflow(nodes, edges, {
       id: workflowId || undefined,
       name: workflowName,
+      envVariables,
     })
 
     saveToLocalStorage(workflow)
@@ -75,8 +76,8 @@ export function useAutoSave() {
       return false
     }
 
-    const { nodes, edges } = deserializeWorkflow(workflow)
-    flowStore.loadWorkflow(workflow.id, workflow.name, nodes, edges)
+    const { nodes, edges, envVariables } = deserializeWorkflow(workflow)
+    flowStore.loadWorkflow(workflow.id, workflow.name, nodes, edges, envVariables)
     setHasRecovery(false)
     clearAutoSave()
     return true

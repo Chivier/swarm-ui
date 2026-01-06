@@ -1,5 +1,16 @@
 import { Node, Edge, MarkerType } from '@xyflow/react'
 import { getNodeTypeKey } from '../components/nodes'
+import type { EnvVariable } from '../stores/flowStore'
+
+/**
+ * Environment variable in workflow file
+ */
+export interface WorkflowEnvVariable {
+  key: string
+  value: string
+  description?: string
+  isSecret?: boolean
+}
 
 /**
  * Workflow JSON file format
@@ -10,6 +21,7 @@ export interface WorkflowFile {
   name: string
   version: number
   variables?: Record<string, unknown>
+  env?: WorkflowEnvVariable[]  // Environment variables
   nodes: WorkflowNodeDef[]
   edges: WorkflowEdgeDef[]
   execution?: {
@@ -65,6 +77,7 @@ export function serializeWorkflow(
     id?: string
     name?: string
     version?: number
+    envVariables?: EnvVariable[]
   } = {}
 ): WorkflowFile {
   const workflowNodes: WorkflowNodeDef[] = nodes.map((node) => ({
@@ -85,10 +98,19 @@ export function serializeWorkflow(
     transform: edge.data?.transform as string | undefined,
   }))
 
+  // Convert env variables (don't save secret values in plain JSON)
+  const env: WorkflowEnvVariable[] | undefined = options.envVariables?.map((v) => ({
+    key: v.key,
+    value: v.isSecret ? '' : v.value, // Don't save secret values
+    description: v.description,
+    isSecret: v.isSecret,
+  }))
+
   return {
     id: options.id || generateId(),
     name: options.name || 'Untitled Workflow',
     version: options.version || 1,
+    env: env && env.length > 0 ? env : undefined,
     nodes: workflowNodes,
     edges: workflowEdges,
     execution: {
@@ -113,6 +135,7 @@ export function serializeWorkflow(
 export function deserializeWorkflow(workflow: WorkflowFile): {
   nodes: Node[]
   edges: Edge[]
+  envVariables: EnvVariable[]
 } {
   const nodes: Node[] = workflow.nodes.map((nodeDef) => ({
     id: nodeDef.id,
@@ -134,18 +157,25 @@ export function deserializeWorkflow(workflow: WorkflowFile): {
     target: edgeDef.target,
     sourceHandle: edgeDef.source_output,
     targetHandle: edgeDef.target_input,
-    type: 'smoothstep',
-    animated: true,
+    type: 'editable',
     markerEnd: {
       type: MarkerType.ArrowClosed,
-      width: 20,
-      height: 20,
+      width: 16,
+      height: 16,
       color: '#64748b',
     },
     data: edgeDef.transform ? { transform: edgeDef.transform } : undefined,
   }))
 
-  return { nodes, edges }
+  // Convert env variables from workflow file
+  const envVariables: EnvVariable[] = (workflow.env || []).map((v) => ({
+    key: v.key,
+    value: v.value || '',
+    description: v.description,
+    isSecret: v.isSecret,
+  }))
+
+  return { nodes, edges, envVariables }
 }
 
 /**

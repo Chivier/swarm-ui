@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import {
   EdgeProps,
   getSmoothStepPath,
@@ -9,10 +9,11 @@ interface EdgeData {
   label?: string
   color?: string
   lineStyle?: 'solid' | 'dashed' | 'animated'
+  edgeIndex?: number  // Index for offset calculation when multiple edges between same nodes
 }
 
 /**
- * EditableEdge - Custom edge with label support and styling options
+ * EditableEdge - Custom edge with dashed style and smart routing
  */
 function EditableEdgeComponent({
   id,
@@ -22,13 +23,46 @@ function EditableEdgeComponent({
   targetY,
   sourcePosition,
   targetPosition,
+  sourceHandleId,
+  targetHandleId,
   data,
   selected,
   markerEnd,
 }: EdgeProps) {
   const edgeData = (data || {}) as EdgeData
   const color = selected ? '#0ea5e9' : (edgeData.color || '#64748b')
-  const lineStyle = edgeData.lineStyle || 'solid'
+  // Default to dashed style
+  const lineStyle = edgeData.lineStyle || 'dashed'
+
+  // Calculate offset based on handle IDs and edge index to avoid overlapping
+  const offset = useMemo(() => {
+    // Base offset based on source/target handle combination
+    const handleOffset = {
+      'top-top': 0,
+      'top-bottom': 0,
+      'top-left': -15,
+      'top-right': 15,
+      'bottom-top': 0,
+      'bottom-bottom': 0,
+      'bottom-left': -15,
+      'bottom-right': 15,
+      'left-top': -15,
+      'left-bottom': -15,
+      'left-left': 0,
+      'left-right': 0,
+      'right-top': 15,
+      'right-bottom': 15,
+      'right-left': 0,
+      'right-right': 0,
+    }
+    const key = `${sourceHandleId || 'bottom'}-${targetHandleId || 'top'}` as keyof typeof handleOffset
+    const baseOffset = handleOffset[key] || 0
+
+    // Add additional offset for multiple edges between same nodes
+    const indexOffset = (edgeData.edgeIndex || 0) * 20
+
+    return baseOffset + indexOffset
+  }, [sourceHandleId, targetHandleId, edgeData.edgeIndex])
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
@@ -37,15 +71,17 @@ function EditableEdgeComponent({
     targetY,
     sourcePosition,
     targetPosition,
+    borderRadius: 8,
+    offset,
   })
 
-  // Calculate stroke properties based on line style
-  const strokeDasharray = lineStyle === 'dashed' ? '5,5' : undefined
-  const strokeWidth = selected ? 3 : 2
+  // Calculate stroke properties - default is dashed
+  const strokeDasharray = lineStyle === 'solid' ? undefined : '6,4'
+  const strokeWidth = selected ? 2.5 : 1.5
 
   // Animation style for animated edges
   const animationStyle = lineStyle === 'animated' ? {
-    strokeDasharray: '5,5',
+    strokeDasharray: '6,4',
     animation: 'edge-dash 0.5s linear infinite',
   } : {}
 

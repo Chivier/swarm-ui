@@ -3,6 +3,7 @@ import { FlowEditor } from './components/FlowEditor'
 import { NodePalette } from './components/NodePalette'
 import { ExecutionPanel } from './components/ExecutionPanel'
 import { NodeConfigModal } from './components/NodeConfigModal'
+import { EnvVariablesModal } from './components/EnvVariablesModal'
 import { useWorkflow, useAutoSave } from './hooks'
 import { useFlowStore } from './stores'
 
@@ -75,7 +76,7 @@ function HeaderToolbar() {
   } = useWorkflow()
 
   const { lastAutoSave, triggerAutoSave } = useAutoSave()
-  const { workflowName, setWorkflowName, isDirty, nodes } = useFlowStore()
+  const { workflowName, setWorkflowName, isDirty, nodes, envVariables, setEnvModalOpen } = useFlowStore()
 
   // Format last auto-save time
   const autoSaveText = lastAutoSave
@@ -133,6 +134,23 @@ function HeaderToolbar() {
       {/* Separator */}
       <div className="h-6 w-px bg-slate-200" />
 
+      {/* Environment Variables */}
+      <button
+        onClick={() => setEnvModalOpen(true)}
+        className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors flex items-center gap-1.5"
+        title="Environment Variables"
+      >
+        <span>Env</span>
+        {envVariables.length > 0 && (
+          <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded-full">
+            {envVariables.length}
+          </span>
+        )}
+      </button>
+
+      {/* Separator */}
+      <div className="h-6 w-px bg-slate-200" />
+
       {/* Toolbar buttons */}
       <div className="flex items-center gap-2">
         {/* New */}
@@ -173,6 +191,7 @@ function App() {
         {/* Modals */}
         <RecoveryDialog />
         <NodeConfigModalWrapper />
+        <EnvVariablesModal />
 
         {/* Header with toolbar */}
         <HeaderToolbar />

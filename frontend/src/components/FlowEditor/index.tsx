@@ -11,6 +11,7 @@ import {
   Node,
   Edge,
   useReactFlow,
+  SelectionMode,
 } from '@xyflow/react'
 import { useFlowStore } from '../../stores'
 import { useKeyboardShortcuts } from '../../hooks'
@@ -217,6 +218,13 @@ export function FlowEditor() {
         fitView
         snapToGrid
         snapGrid={[15, 15]}
+        // Multi-selection and group drag
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
+        selectNodesOnDrag
+        panOnDrag={[1, 2]}
+        selectionKeyCode={null}
+        multiSelectionKeyCode="Shift"
         defaultEdgeOptions={{
           type: 'editable',
           markerEnd: {
@@ -226,7 +234,7 @@ export function FlowEditor() {
             color: '#64748b',
           },
         }}
-        connectionLineStyle={{ stroke: '#94a3b8', strokeWidth: 2 }}
+        connectionLineStyle={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5,5' }}
         connectionLineType={ConnectionLineType.SmoothStep}
       >
         <Background variant={BackgroundVariant.Dots} gap={15} size={1} />
@@ -278,8 +286,19 @@ function getNodeDescription(nodeType: string): string {
  */
 function getDefaultConfig(nodeType: string): Record<string, unknown> {
   const configs: Record<string, Record<string, unknown>> = {
-    'ai.openai.chat': { model: 'gpt-4', temperature: 0.7, api_key: '' },
-    'ai.openai.compatible': { base_url: '', model: '', temperature: 0.7, api_key: '' },
+    'ai.openai.chat': {
+      model: 'gpt-4',
+      temperature: 0.7,
+      api_key: '${ENV.OPENAI_API_KEY}',
+      prompt: '',
+    },
+    'ai.openai.compatible': {
+      base_url: '',
+      model: '',
+      temperature: 0.7,
+      api_key: '${ENV.OPENAI_API_KEY}',
+      prompt: '',
+    },
     'http.request': { method: 'GET', url: '' },
     'code.python': { code: '# Python code here\n\ndef execute(inputs):\n    return {"output": inputs}' },
     'trigger.schedule': { cron: '0 * * * *', timezone: 'UTC' },
