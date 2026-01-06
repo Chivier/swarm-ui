@@ -1,0 +1,13 @@
+[package]
+name = "swarmx-dataref"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SwarmX DataRef - Global pointer system for distributed data"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true

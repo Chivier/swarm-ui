@@ -1,0 +1,142 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "name": "Code Review with DeepSeek",
+  "version": 1,
+  "variables": {
+    "deepseek_model": "deepseek-coder",
+    "review_temperature": 0.3
+  },
+  "nodes": [
+    {
+      "id": "input-code",
+      "type": "core.input",
+      "name": "Source Code",
+      "config": {
+        "accept": ["text/plain", "text/x-python", "application/json"],
+        "max_size_mb": 10
+      },
+      "outputs": [
+        { "name": "content", "dtype": "string" },
+        { "name": "filename", "dtype": "string" },
+        { "name": "metadata", "dtype": "json" }
+      ],
+      "position": { "x": 100, "y": 200 }
+    },
+    {
+      "id": "analyze-structure",
+      "type": "code.python",
+      "name": "Analyze Code Structure",
+      "config": {
+        "code": "import ast\n\ndef execute(inputs):\n    code = inputs['code']\n    try:\n        tree = ast.parse(code)\n        functions = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]\n        classes = [n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]\n        return {\n            'structure': {'functions': functions, 'classes': classes},\n            'line_count': len(code.splitlines())\n        }\n    except SyntaxError as e:\n        return {'structure': {'error': str(e)}, 'line_count': 0}"
+      },
+      "inputs": [
+        { "name": "code", "dtype": "string", "required": true }
+      ],
+      "outputs": [
+        { "name": "structure", "dtype": "json" },
+        { "name": "line_count", "dtype": "integer" }
+      ],
+      "position": { "x": 350, "y": 100 }
+    },
+    {
+      "id": "deepseek-review",
+      "type": "ai.deepseek.chat",
+      "name": "DeepSeek Code Review",
+      "config": {
+        "model": "{{variables.deepseek_model}}",
+        "temperature": "{{variables.review_temperature}}",
+        "max_tokens": 2048,
+        "system_prompt": "You are an expert code reviewer. Analyze the code for bugs, security issues, performance problems, and suggest improvements. Be specific and provide code examples where helpful."
+      },
+      "inputs": [
+        { "name": "messages", "dtype": "json", "required": true },
+        { "name": "context", "dtype": "string", "required": false }
+      ],
+      "outputs": [
+        { "name": "response", "dtype": "string" },
+        { "name": "usage", "dtype": "json" }
+      ],
+      "position": { "x": 350, "y": 300 }
+    },
+    {
+      "id": "format-report",
+      "type": "code.python",
+      "name": "Format Review Report",
+      "config": {
+        "code": "import json\n\ndef execute(inputs):\n    review = inputs['review']\n    structure = inputs['structure']\n    \n    funcs = structure.get('functions', [])\n    classes = structure.get('classes', [])\n    \n    report = f'''# Code Review Report\n\n## Code Structure\n- Functions: {len(funcs)} ({', '.join(funcs[:5])}{'...' if len(funcs) > 5 else ''})\n- Classes: {len(classes)} ({', '.join(classes[:5])}{'...' if len(classes) > 5 else ''})\n\n## Review\n{review}\n'''\n    return {'report': report}"
+      },
+      "inputs": [
+        { "name": "review", "dtype": "string", "required": true },
+        { "name": "structure", "dtype": "json", "required": true }
+      ],
+      "outputs": [
+        { "name": "report", "dtype": "string" }
+      ],
+      "position": { "x": 600, "y": 200 }
+    },
+    {
+      "id": "output-result",
+      "type": "core.output",
+      "name": "Review Report",
+      "inputs": [
+        { "name": "result", "dtype": "string", "required": true }
+      ],
+      "position": { "x": 850, "y": 200 }
+    }
+  ],
+  "edges": [
+    {
+      "source": "input-code",
+      "source_output": "content",
+      "target": "analyze-structure",
+      "target_input": "code"
+    },
+    {
+      "source": "input-code",
+      "source_output": "content",
+      "target": "deepseek-review",
+      "target_input": "messages",
+      "transform": "{{ [{'role': 'user', 'content': 'Please review the following code:\\n\\n```\\n' + value + '\\n```'}] }}"
+    },
+    {
+      "source": "analyze-structure",
+      "source_output": "structure",
+      "target": "deepseek-review",
+      "target_input": "context",
+      "transform": "{{ 'Code structure analysis: ' + json.dumps(value) }}"
+    },
+    {
+      "source": "deepseek-review",
+      "source_output": "response",
+      "target": "format-report",
+      "target_input": "review"
+    },
+    {
+      "source": "analyze-structure",
+      "source_output": "structure",
+      "target": "format-report",
+      "target_input": "structure"
+    },
+    {
+      "source": "format-report",
+      "source_output": "report",
+      "target": "output-result",
+      "target_input": "result"
+    }
+  ],
+  "execution": {
+    "mode": "remote",
+    "server": "http://localhost:9090",
+    "timeout_ms": 300000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_ms": 1000,
+      "backoff_multiplier": 2.0
+    }
+  },
+  "metadata": {
+    "author": "chivier",
+    "tags": ["code-review", "deepseek", "llm", "python"],
+    "description": "Analyze code structure and perform code review using DeepSeek Coder"
+  }
+}

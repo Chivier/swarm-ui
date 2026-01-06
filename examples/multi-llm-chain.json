@@ -1,0 +1,124 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440003",
+  "name": "Multi-LLM Chain",
+  "version": 1,
+  "variables": {},
+  "nodes": [
+    {
+      "id": "input",
+      "type": "core.input",
+      "name": "User Question",
+      "config": {
+        "accept": ["text/plain"]
+      },
+      "outputs": [
+        { "name": "content", "dtype": "string" }
+      ],
+      "position": { "x": 100, "y": 200 }
+    },
+    {
+      "id": "research",
+      "type": "ai.openai.chat",
+      "name": "Research (GPT-4)",
+      "config": {
+        "model": "gpt-4",
+        "temperature": 0.7,
+        "system_prompt": "You are a research assistant. Given a question, provide detailed background information and relevant facts."
+      },
+      "inputs": [
+        { "name": "messages", "dtype": "json", "required": true }
+      ],
+      "outputs": [
+        { "name": "response", "dtype": "string" }
+      ],
+      "position": { "x": 350, "y": 100 }
+    },
+    {
+      "id": "analysis",
+      "type": "ai.anthropic.chat",
+      "name": "Analysis (Claude)",
+      "config": {
+        "model": "claude-3-sonnet",
+        "temperature": 0.5,
+        "system_prompt": "You are an analytical assistant. Given research information, analyze it critically and identify key insights."
+      },
+      "inputs": [
+        { "name": "messages", "dtype": "json", "required": true }
+      ],
+      "outputs": [
+        { "name": "response", "dtype": "string" }
+      ],
+      "position": { "x": 350, "y": 300 }
+    },
+    {
+      "id": "synthesis",
+      "type": "ai.deepseek.chat",
+      "name": "Synthesis (DeepSeek)",
+      "config": {
+        "model": "deepseek-chat",
+        "temperature": 0.3,
+        "system_prompt": "You are a synthesis expert. Combine research and analysis into a clear, actionable answer."
+      },
+      "inputs": [
+        { "name": "messages", "dtype": "json", "required": true }
+      ],
+      "outputs": [
+        { "name": "response", "dtype": "string" }
+      ],
+      "position": { "x": 600, "y": 200 }
+    },
+    {
+      "id": "output",
+      "type": "core.output",
+      "name": "Final Answer",
+      "inputs": [
+        { "name": "result", "dtype": "string", "required": true }
+      ],
+      "position": { "x": 850, "y": 200 }
+    }
+  ],
+  "edges": [
+    {
+      "source": "input",
+      "source_output": "content",
+      "target": "research",
+      "target_input": "messages",
+      "transform": "{{ [{'role': 'user', 'content': 'Research the following topic: ' + value}] }}"
+    },
+    {
+      "source": "input",
+      "source_output": "content",
+      "target": "analysis",
+      "target_input": "messages",
+      "transform": "{{ [{'role': 'user', 'content': 'Analyze this question from multiple perspectives: ' + value}] }}"
+    },
+    {
+      "source": "research",
+      "source_output": "response",
+      "target": "synthesis",
+      "target_input": "messages",
+      "transform": "{{ [{'role': 'user', 'content': 'Research findings:\\n' + value}] }}"
+    },
+    {
+      "source": "synthesis",
+      "source_output": "response",
+      "target": "output",
+      "target_input": "result"
+    }
+  ],
+  "execution": {
+    "mode": "remote",
+    "server": "http://localhost:9090",
+    "timeout_ms": 600000,
+    "retry_policy": {
+      "max_retries": 2,
+      "backoff_ms": 2000,
+      "backoff_multiplier": 2.0
+    }
+  },
+  "metadata": {
+    "author": "chivier",
+    "tags": ["multi-llm", "chain", "research"],
+    "description": "Chain multiple LLMs for research, analysis, and synthesis"
+  }
+}

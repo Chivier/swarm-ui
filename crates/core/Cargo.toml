@@ -1,0 +1,19 @@
+[package]
+name = "swarmx-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SwarmX Core - DAG execution engine, scheduler, and state machine"
+
+[dependencies]
+petgraph.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+swarmx-dataref = { path = "../dataref" }
+swarmx-events = { path = "../events" }

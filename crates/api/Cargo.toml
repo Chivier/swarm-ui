@@ -1,0 +1,29 @@
+[package]
+name = "swarmx-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SwarmX API - HTTP server and handlers"
+
+[[bin]]
+name = "swarmx-ui"
+path = "src/main.rs"
+
+[dependencies]
+tokio.workspace = true
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+swarmx-core = { path = "../core" }
+swarmx-dataref = { path = "../dataref" }
+swarmx-events = { path = "../events" }
+swarmx-protocol = { path = "../protocol" }

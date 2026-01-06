@@ -1,0 +1,22 @@
+[package]
+name = "swarmx-events"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SwarmX Events - Event types, WAL, and message queue integration"
+
+[features]
+default = []
+kafka = ["dep:rdkafka"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+rusqlite.workspace = true
+tracing.workspace = true
+
+rdkafka = { workspace = true, optional = true }

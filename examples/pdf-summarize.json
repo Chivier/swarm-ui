@@ -1,0 +1,102 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "name": "PDF Summarization Pipeline",
+  "version": 1,
+  "variables": {
+    "model": "gpt-4",
+    "max_tokens": 2048
+  },
+  "nodes": [
+    {
+      "id": "input",
+      "type": "core.input",
+      "name": "PDF File",
+      "config": {
+        "accept": ["application/pdf"],
+        "max_size_mb": 10
+      },
+      "outputs": [
+        { "name": "content", "dtype": "bytes" },
+        { "name": "filename", "dtype": "string" }
+      ],
+      "position": { "x": 100, "y": 200 }
+    },
+    {
+      "id": "extract",
+      "type": "format.pdf.extract",
+      "name": "Extract Text",
+      "config": {},
+      "inputs": [
+        { "name": "pdf", "dtype": "bytes", "required": true }
+      ],
+      "outputs": [
+        { "name": "text", "dtype": "string" },
+        { "name": "pages", "dtype": "integer" }
+      ],
+      "position": { "x": 350, "y": 200 }
+    },
+    {
+      "id": "summarize",
+      "type": "ai.openai.chat",
+      "name": "Summarize with GPT",
+      "config": {
+        "model": "{{variables.model}}",
+        "max_tokens": "{{variables.max_tokens}}",
+        "system_prompt": "You are a helpful assistant that summarizes documents concisely."
+      },
+      "inputs": [
+        { "name": "messages", "dtype": "json", "required": true }
+      ],
+      "outputs": [
+        { "name": "response", "dtype": "string" },
+        { "name": "usage", "dtype": "json" }
+      ],
+      "position": { "x": 600, "y": 200 }
+    },
+    {
+      "id": "output",
+      "type": "core.output",
+      "name": "Summary",
+      "inputs": [
+        { "name": "result", "dtype": "string", "required": true }
+      ],
+      "position": { "x": 850, "y": 200 }
+    }
+  ],
+  "edges": [
+    {
+      "source": "input",
+      "source_output": "content",
+      "target": "extract",
+      "target_input": "pdf"
+    },
+    {
+      "source": "extract",
+      "source_output": "text",
+      "target": "summarize",
+      "target_input": "messages",
+      "transform": "{{ [{'role': 'user', 'content': 'Please summarize the following document:\\n\\n' + value}] }}"
+    },
+    {
+      "source": "summarize",
+      "source_output": "response",
+      "target": "output",
+      "target_input": "result"
+    }
+  ],
+  "execution": {
+    "mode": "remote",
+    "server": "http://localhost:9090",
+    "timeout_ms": 300000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_ms": 1000,
+      "backoff_multiplier": 2.0
+    }
+  },
+  "metadata": {
+    "author": "chivier",
+    "tags": ["pdf", "summarization", "llm"],
+    "description": "Extract text from PDF and generate a summary using GPT"
+  }
+}
