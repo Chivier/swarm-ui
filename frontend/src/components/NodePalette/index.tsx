@@ -46,6 +46,7 @@ const NODE_CATEGORIES: NodeCategory[] = [
     icon: '🔀',
     nodes: [
       { type: 'flow.if', label: 'IF', description: 'Conditional branch' },
+      { type: 'flow.ai_branch', label: 'AI Branch', description: 'AI-powered if/else' },
       { type: 'flow.loop', label: 'Loop', description: 'Iterate array' },
       { type: 'flow.merge', label: 'Merge', description: 'Merge branches' },
     ],

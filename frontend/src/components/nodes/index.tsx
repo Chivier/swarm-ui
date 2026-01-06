@@ -5,16 +5,6 @@ import { useFlowStore } from '../../stores'
 import { parseCronToHuman } from '../../utils/cron'
 
 /**
- * Get API key related environment variables
- */
-function useApiKeyEnvVars() {
-  const envVariables = useFlowStore((state) => state.envVariables)
-  return envVariables.filter(
-    (v) => v.key.includes('API_KEY') || v.key.includes('KEY') || v.key.includes('TOKEN')
-  )
-}
-
-/**
  * Helper to safely cast node data
  */
 function getNodeData(props: NodeProps): BaseNodeData {
@@ -34,94 +24,29 @@ function getNodeData(props: NodeProps): BaseNodeData {
 
 /**
  * OpenAI Node - For OpenAI GPT models
- * n8n/dify style: inline input fields with env var support
+ * Shows only essential info on node, detailed config in edit modal
  */
 const OpenAINodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
-  const updateNodeData = useFlowStore((state) => state.updateNodeData)
-  const apiKeyEnvVars = useApiKeyEnvVars()
-
-  // Default to ${ENV.OPENAI_API_KEY} if not set
-  const apiKeyValue = (data.config?.api_key as string) || '${ENV.OPENAI_API_KEY}'
   const modelValue = (data.config?.model as string) || 'gpt-4'
   const promptValue = (data.config?.prompt as string) || ''
 
-  const handleFieldChange = useCallback(
-    (field: string, value: string) => {
-      updateNodeData(props.id, {
-        config: {
-          ...data.config,
-          [field]: value,
-        },
-      })
-    },
-    [props.id, data.config, updateNodeData]
-  )
-
-  // Quick select env var for API key
-  const handleEnvVarSelect = useCallback(
-    (key: string) => {
-      handleFieldChange('api_key', `\${ENV.${key}}`)
-    },
-    [handleFieldChange]
-  )
+  // Truncate prompt for preview
+  const promptPreview = promptValue.length > 40
+    ? promptValue.substring(0, 40) + '...'
+    : promptValue || 'No prompt set'
 
   return (
     <BaseNode data={data} selected={props.selected} icon="🤖" color="violet" nodeId={props.id}>
-      <div className="space-y-2 min-w-[200px]">
-        {/* API Key field with env var suggestions */}
-        <div className="nodrag">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-slate-500">API Key</span>
-            {apiKeyEnvVars.length > 0 && (
-              <div className="flex gap-1">
-                {apiKeyEnvVars.slice(0, 2).map((v) => (
-                  <button
-                    key={v.key}
-                    onClick={() => handleEnvVarSelect(v.key)}
-                    className="text-[10px] px-1 py-0.5 bg-violet-100 text-violet-600 rounded hover:bg-violet-200"
-                    title={`Use ${v.key}`}
-                  >
-                    {v.key.replace('_API_KEY', '').replace('_KEY', '')}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <input
-            type="text"
-            value={apiKeyValue}
-            onChange={(e) => handleFieldChange('api_key', e.target.value)}
-            placeholder="${ENV.OPENAI_API_KEY}"
-            className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono"
-          />
+      <div className="space-y-1 min-w-[140px]">
+        {/* Model - always visible */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-slate-500">Model:</span>
+          <span className="text-xs font-mono text-violet-600">{modelValue}</span>
         </div>
-
-        {/* Model field */}
-        <div className="nodrag">
-          <span className="text-xs text-slate-500 block mb-1">Model</span>
-          <select
-            value={modelValue}
-            onChange={(e) => handleFieldChange('model', e.target.value)}
-            className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
-          >
-            <option value="gpt-4">gpt-4</option>
-            <option value="gpt-4-turbo">gpt-4-turbo</option>
-            <option value="gpt-4o">gpt-4o</option>
-            <option value="gpt-4o-mini">gpt-4o-mini</option>
-            <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-          </select>
-        </div>
-
-        {/* Prompt field */}
-        <div className="nodrag">
-          <span className="text-xs text-slate-500 block mb-1">Prompt</span>
-          <textarea
-            value={promptValue}
-            onChange={(e) => handleFieldChange('prompt', e.target.value)}
-            placeholder="Enter prompt or use ${input.field}..."
-            className="w-full h-16 text-xs px-2 py-1 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y"
-          />
+        {/* Prompt preview */}
+        <div className="text-xs text-slate-400 truncate" title={promptValue}>
+          {promptPreview}
         </div>
       </div>
     </BaseNode>
@@ -131,107 +56,66 @@ export const OpenAINode = memo(OpenAINodeComponent)
 
 /**
  * OpenAI Compatible Node - For custom OpenAI-compatible endpoints
- * n8n/dify style: inline input fields with env var support
+ * Shows only essential info on node, detailed config in edit modal
  */
 const OpenAICompatibleNodeComponent = (props: NodeProps) => {
   const data = getNodeData(props)
-  const updateNodeData = useFlowStore((state) => state.updateNodeData)
-  const apiKeyEnvVars = useApiKeyEnvVars()
-
-  const apiKeyValue = (data.config?.api_key as string) || '${ENV.OPENAI_API_KEY}'
   const baseUrlValue = (data.config?.base_url as string) || ''
   const modelValue = (data.config?.model as string) || ''
-  const promptValue = (data.config?.prompt as string) || ''
 
-  const handleFieldChange = useCallback(
-    (field: string, value: string) => {
-      updateNodeData(props.id, {
-        config: {
-          ...data.config,
-          [field]: value,
-        },
-      })
-    },
-    [props.id, data.config, updateNodeData]
-  )
-
-  const handleEnvVarSelect = useCallback(
-    (key: string) => {
-      handleFieldChange('api_key', `\${ENV.${key}}`)
-    },
-    [handleFieldChange]
-  )
+  // Truncate URL for preview
+  const urlPreview = baseUrlValue
+    ? (baseUrlValue.length > 25 ? baseUrlValue.substring(0, 25) + '...' : baseUrlValue)
+    : 'Not configured'
 
   return (
     <BaseNode data={data} selected={props.selected} icon="🔌" color="violet" nodeId={props.id}>
-      <div className="space-y-2 min-w-[200px]">
-        {/* Base URL field */}
-        <div className="nodrag">
-          <span className="text-xs text-slate-500 block mb-1">Base URL</span>
-          <input
-            type="text"
-            value={baseUrlValue}
-            onChange={(e) => handleFieldChange('base_url', e.target.value)}
-            placeholder="https://api.example.com/v1"
-            className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono"
-          />
+      <div className="space-y-1 min-w-[140px]">
+        {/* Endpoint preview */}
+        <div className="text-xs text-slate-400 truncate" title={baseUrlValue}>
+          {urlPreview}
         </div>
-
-        {/* API Key field */}
-        <div className="nodrag">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-slate-500">API Key</span>
-            {apiKeyEnvVars.length > 0 && (
-              <div className="flex gap-1">
-                {apiKeyEnvVars.slice(0, 2).map((v) => (
-                  <button
-                    key={v.key}
-                    onClick={() => handleEnvVarSelect(v.key)}
-                    className="text-[10px] px-1 py-0.5 bg-violet-100 text-violet-600 rounded hover:bg-violet-200"
-                    title={`Use ${v.key}`}
-                  >
-                    {v.key.replace('_API_KEY', '').replace('_KEY', '')}
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Model - if set */}
+        {modelValue && (
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-slate-500">Model:</span>
+            <span className="text-xs font-mono text-violet-600">{modelValue}</span>
           </div>
-          <input
-            type="text"
-            value={apiKeyValue}
-            onChange={(e) => handleFieldChange('api_key', e.target.value)}
-            placeholder="${ENV.API_KEY}"
-            className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono"
-          />
-        </div>
-
-        {/* Model field */}
-        <div className="nodrag">
-          <span className="text-xs text-slate-500 block mb-1">Model</span>
-          <input
-            type="text"
-            value={modelValue}
-            onChange={(e) => handleFieldChange('model', e.target.value)}
-            placeholder="model-name"
-            className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono"
-          />
-        </div>
-
-        {/* Prompt field */}
-        <div className="nodrag">
-          <span className="text-xs text-slate-500 block mb-1">Prompt</span>
-          <textarea
-            value={promptValue}
-            onChange={(e) => handleFieldChange('prompt', e.target.value)}
-            placeholder="Enter prompt or use ${input.field}..."
-            className="w-full h-16 text-xs px-2 py-1 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y"
-          />
-        </div>
+        )}
       </div>
     </BaseNode>
   )
 }
 export const OpenAICompatibleNode = memo(OpenAICompatibleNodeComponent)
+
+/**
+ * AI Flow Node - AI-powered conditional branching
+ * Uses AI to decide which branch to take based on input
+ */
+const AIFlowNodeComponent = (props: NodeProps) => {
+  const data = getNodeData(props)
+  const condition = (data.config?.condition as string) || ''
+
+  const conditionPreview = condition.length > 30
+    ? condition.substring(0, 30) + '...'
+    : condition || 'Configure condition...'
+
+  return (
+    <BaseNode data={data} selected={props.selected} icon="🧠" color="amber" nodeId={props.id}>
+      <div className="space-y-1 min-w-[140px]">
+        <div className="text-xs text-amber-600 font-medium">AI Branch</div>
+        <div className="text-xs text-slate-400 truncate" title={condition}>
+          {conditionPreview}
+        </div>
+        <div className="flex gap-2 text-[10px]">
+          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded">True</span>
+          <span className="px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded">False</span>
+        </div>
+      </div>
+    </BaseNode>
+  )
+}
+export const AIFlowNode = memo(AIFlowNodeComponent)
 
 /**
  * Python Code Node - Foldable with inline code editor
@@ -453,6 +337,7 @@ export const nodeTypes = {
 
   // Flow nodes
   'flow.if': FlowNode,
+  'flow.ai_branch': AIFlowNode,  // AI-powered conditional branching
   'flow.loop': FlowNode,
   'flow.merge': FlowNode,
   'flow.switch': FlowNode,
